@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brocam</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .flex-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        #preview-container {
+            flex: 0 0 60%;
+        }
+
+        .controls {
+            flex: 0 0 30%; /* Adjust width of controls container */
+        }
+
+        #preview {
+            max-width: 100%; /* Adjust according to your design */
+            height: auto;
+            border: 1px solid black;
+        }
+
+        #live_preview {
+            max-width: 50%; /* Adjust according to your design */
+            height: auto;
+            border: 1px solid black;
+        }
+
+        .slider {
+            margin-bottom: 20px;
+            display: flex; /* Added to align sliders horizontally */
+            align-items: center; /* Added to vertically center sliders */
+        }
+
+        .slider input:disabled {
+            opacity: 0.5; /* Reduce opacity of disabled sliders */
+            cursor: not-allowed; /* Change cursor for disabled sliders */
+        }
+
+        .settings-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Align items horizontally */
+            margin-top: 20px;
+        }
+
+        .settings-container label {
+            margin-bottom: 5px;
+        }
+
+        .settings-container input {
+            width: 100%; /* Ensure inputs take up full width */
+            margin-bottom: 10px;
+        }
+        .row {
+            display: flex;
+            align-items: left;
+        }
+
+        .row label {
+            flex: 1;
+            margin-right: 0px;
+        }
+
+        .row input {
+            flex: 1;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Brocam</h1>
+    <h2>"When your Bro can't, ask your Brocam"</h2>
+    <div id="container" class="flex-container">
+        <div id="preview-container">
+            <h2>Preview</h2>
+            <img id="preview" src="" alt="Preview">
+        </div>
+        <div class="controls">
+            <label for="panSlider">Pan:</label>
+            <input type="range" min="0" max="255" value="{{ default_settings.pan }}" class="slider" id="panSlider"><br>
+
+            <label for="tiltSlider">Tilt:</label>
+            <input type="range" min="0" max="255" value="{{ default_settings.tilt }}" class="slider" id="tiltSlider"><br>
+
+            <label for="zoomSlider">Zoom:</label>
+            <input type="range" min="0" max="100" value="{{ default_settings.zoom }}" class="slider" id="zoomSlider"><br>
+
+            <label for="intensitySlider">Intensity:</label>
+            <input type="range" min="0" max="255" value="0" class="slider" id="intensitySlider"><br>
+
+            <label for="rgbSlider">RGB:</label>
+            <input type="range" min="0" max="255" value="0" class="slider" id="rgbSlider"><br>
+
+            <label for="toggleMode">Mode:</label>
+            <button id="toggleMode">Auto</button><br>
+            <br>
+            <br>
+
+            <img id="live_preview" src="" alt="Preview">
+
+        </div>
+
+    </div>
+    <div class="settings-container">
+        <label>Camera settings:</label><br>
+        <div class="row">
+            <label for="panInput">Start Pan:</label>
+            <input type="number" id="panInput" readonly value="{{ default_settings.pan }}">
+            <label for="tiltInput">Start Tilt:</label>
+            <input type="number" id="tiltInput" readonly value="{{ default_settings.tilt }}">
+            <label for="zoomInput">Start Zoom:</label>
+            <input type="number" id="zoomInput" readonly value="{{ default_settings.zoom }}">
+        </div>
+        <div class="row">
+            <label for="panSensitivityInput">Pan Sensitivity:</label>
+            <input type="number" id="panSensitivityInput" readonly value="{{ default_settings.pan_sensitivity }}">
+        </div>
+        <div class="row">
+            <label for="recordingTimeInput">Recording Time:</label>
+            <input type="number" id="recordingTimeInput" readonly value="{{ default_settings.recording_time }}">
+        </div>
+        <button id="editButton">Edit settings</button><br>
+    </div>
+
+	<script>
+
+        // Function to update the preview image
+		function updatePreview() {
+			var preview = document.getElementById('preview');
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', '/get_frame', true);
+			xhr.responseType = 'blob';
+			xhr.onload = function () {
+				if (this.status === 200) {
+					var blob = this.response;
+					var url = URL.createObjectURL(blob);
+					preview.src = url;
+				}
+			};
+			xhr.send();
+		}
+
+		function updateLivePreview() {
+			var preview = document.getElementById('live_preview');
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', '/get_live_frame', true);
+			xhr.responseType = 'blob';
+			xhr.onload = function () {
+				if (this.status === 200) {
+					var blob = this.response;
+					var url = URL.createObjectURL(blob);
+					preview.src = url;
+				}
+			};
+			xhr.send();
+		}
+
+
+		// Function to handle zoom level change
+		function handleZoomChange(event) {
+			console.log("Zoom level changed:", event.target.value);
+			var zoomLevel = event.target.value;
+			// Send zoom level data to the Flask server
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', '/control_zoom', true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.send(JSON.stringify({ zoomLevel: zoomLevel }));
+		}
+
+        // Function to handle intensity level change
+		function handleIntensityChange(event) {
+			console.log("Intensity level changed:", event.target.value);
+			var intensityLevel = event.target.value;
+			// Send intensity level data to the Flask server
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', '/control_intensity', true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.send(JSON.stringify({ intensityLevel: intensityLevel }));
+		}
+
+		// Function to handle RGB level change
+		function handleRGBChange(event) {
+			console.log("RGB level changed:", event.target.value);
+			var rgbLevel = event.target.value;
+			// Send intensity level data to the Flask server
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', '/control_rgb', true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.send(JSON.stringify({ rgbLevel: rgbLevel }));
+		}
+
+		// Function to handle pan level change
+		function handlePanChange(event) {
+			console.log("Pan level changed:", event.target.value);
+			var panLevel = event.target.value;
+			// Send intensity level data to the Flask server
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', '/control_pan', true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.send(JSON.stringify({ panLevel: panLevel }));
+		}
+
+		// Function to handle tilt level change
+		function handleTiltChange(event) {
+			console.log("Tilt level changed:", event.target.value);
+			var tiltLevel = event.target.value;
+			// Send intensity level data to the Flask server
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', '/control_tilt', true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.send(JSON.stringify({ tiltLevel: tiltLevel }));
+		}
+
+		// Attach RGB slider change event listener
+		document.getElementById('zoomSlider').addEventListener('input', handleZoomChange);
+		document.getElementById('intensitySlider').addEventListener('input', handleIntensityChange);
+		document.getElementById('rgbSlider').addEventListener('input', handleRGBChange);
+		document.getElementById('panSlider').addEventListener('input', handlePanChange);
+		document.getElementById('tiltSlider').addEventListener('input', handleTiltChange);
+
+
+		// Update the preview image periodically
+		setInterval(updatePreview, 100);
+		setInterval(updateLivePreview, 200);
+
+        // Function to handle toggle button click event
+        function toggleMode() {
+            var button = document.getElementById('toggleMode');
+            var currentState = button.textContent.trim();
+            var newState = currentState === 'Auto' ? 'Manual' : 'Auto';
+
+            // Send HTTP request to Python server to update the variable
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/update_mode', true); // Adjust URL endpoint
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    console.log('Mode updated successfully');
+                    button.textContent = newState;
+
+                    var sliders = document.getElementsByClassName('slider');
+                    for (var i = 0; i < sliders.length; i++) {
+                        sliders[i].disabled = newState === 'Auto';
+                    }
+
+                } else {
+                    console.error('Failed to update mode:', xhr.statusText);
+                }
+            };
+            xhr.onerror = function () {
+                console.error('Failed to update mode:', xhr.statusText);
+            };
+            xhr.send(JSON.stringify({ newState: newState }));
+        }
+
+        document.getElementById('toggleMode').addEventListener('click', function () {
+            toggleMode();
+        });
+
+        // Function to synchronize sliders with input fields when in edit mode
+        function syncSlidersWithInputs() {
+            document.getElementById('panSlider').value = document.getElementById('panInput').value;
+            document.getElementById('tiltSlider').value = document.getElementById('tiltInput').value;
+            document.getElementById('zoomSlider').value = document.getElementById('zoomInput').value;
+        }
+
+
+        // Add event listeners to update input fields when sliders are changed
+        var sliders = document.querySelectorAll('.slider');
+        sliders.forEach(function(slider) {
+            slider.addEventListener('input', function() {
+                if (document.getElementById('editButton').textContent === 'Save settings') {
+                    var inputId = this.id.replace('Slider', 'Input');
+                    document.getElementById(inputId).value = this.value;
+                }
+            });
+        });
+
+        // Function to check if edit mode is enabled
+        function isEditMode() {
+            return document.getElementById('editButton').textContent === 'Save settings';
+        }
+
+        // Function to toggle between view and edit modes
+        function toggleEditMode() {
+            var inputs = document.querySelectorAll('.settings-container input');
+            var editButton = document.getElementById('editButton');
+            if (editButton.textContent === 'Edit settings') {
+                editButton.textContent = 'Save settings';
+                inputs.forEach(function (input) {
+                    input.removeAttribute('readonly');
+                });
+            } else {
+                editButton.textContent = 'Edit settings';
+                inputs.forEach(function (input) {
+                    input.setAttribute('readonly', true);
+                });
+                handleSaveButton();
+
+            }
+            syncSlidersWithInputs(); // Synchronize sliders with inputs when toggling edit mode
+        }
+
+        function handleSaveButton() {
+            var pan = document.getElementById('panInput').value;
+            var tilt = document.getElementById('tiltInput').value;
+            var zoom = document.getElementById('zoomInput').value;
+            var panSensitivity = document.getElementById('panSensitivityInput').value;
+            var recordingTime = document.getElementById('recordingTimeInput').value;
+
+            var settings = {
+                pan: pan,
+                tilt: tilt,
+                zoom: zoom,
+                pan_sensitivity: panSensitivity,
+                recording_time: recordingTime
+            };
+
+            fetch('/save_settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to save settings');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Settings saved:', data);
+            })
+            .catch(error => {
+                console.error('Error saving settings:', error);
+            });
+        }
+
+        // Event listener for the "Edit settings" button
+        document.getElementById('editButton').addEventListener('click', function () {
+            toggleEditMode();
+        });
+
+	</script>
+</body>
+</html>

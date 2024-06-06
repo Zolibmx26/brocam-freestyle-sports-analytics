@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Control Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #preview {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            border: 1px solid black;
+            margin-bottom: 20px;
+        }
+
+        #zoomRange {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        h1, h2 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Camera Control Interface</h1>
+    <div>
+        <h2>Preview</h2>
+        <img id="preview" src="" alt="Preview">
+    </div>
+    <div>
+        <h2>Zoom</h2>
+        <input type="range" min="0" max="100" value="50" id="zoomRange">
+    </div>
+
+    <script>
+        // Function to update the preview image
+        function updatePreview() {
+            var preview = document.getElementById('preview');
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/get_frame', true);
+            xhr.responseType = 'blob';
+            xhr.onload = function () {
+                if (this.status === 200) {
+                    var blob = this.response;
+                    var url = URL.createObjectURL(blob);
+                    preview.src = url;
+                }
+            };
+            xhr.send();
+        }
+
+        // Function to handle zoom adjustment
+        document.getElementById('zoomRange').addEventListener('input', function () {
+            var zoomLevel = this.value;
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/adjust_zoom', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function () {
+                if (this.status === 200) {
+                    console.log('Zoom level adjusted successfully');
+                }
+            };
+            var data = JSON.stringify({ zoomLevel: zoomLevel });
+            xhr.send(data);
+        });
+
+        // Update the preview image periodically
+        setInterval(updatePreview, 200);
+    </script>
+</body>
+</html>
