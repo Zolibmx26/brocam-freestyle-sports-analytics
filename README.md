@@ -1,1 +1,3 @@
-Can you film me while I am trying this trick, just one try? If you are bored of your bro asking you to film all the time, Brocam is here to help you out.
+Brocam is an innovative solution for your freestyle sports trainings.
+
+Work in progress..
